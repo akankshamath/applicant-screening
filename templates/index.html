@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hackerhouse Screener</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f0f;
+      color: #e8e8e8;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container { max-width: 760px; margin: 0 auto; }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+
+    .subtitle {
+      color: #888;
+      font-size: 0.9rem;
+      margin-bottom: 32px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+
+    input[type="url"] {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid #2a2a2a;
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    input[type="url"]:focus { border-color: #4f8ef7; }
+
+    button {
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: none;
+      background: #4f8ef7;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+      white-space: nowrap;
+    }
+
+    button:hover { background: #3a7de0; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .loader {
+      display: none;
+      text-align: center;
+      padding: 40px;
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    .loader.active { display: block; }
+
+    .error {
+      display: none;
+      background: #2a1111;
+      border: 1px solid #5a2020;
+      border-radius: 10px;
+      padding: 16px 20px;
+      color: #f87171;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+
+    .error.active { display: block; }
+
+    .card {
+      display: none;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .card.active { display: block; }
+
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #222;
+    }
+
+    .card-header h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .card-header p {
+      font-size: 0.85rem;
+      color: #888;
+      margin-top: 3px;
+    }
+
+    .card-body { padding: 20px 24px; }
+
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #666;
+      margin-bottom: 12px;
+    }
+
+    .highlight-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .highlight {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 14px 18px;
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .highlight .label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .highlight .value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .highlight .value.accent { color: #4f8ef7; }
+    .highlight .value.green { color: #4ade80; }
+    .highlight .value.yellow { color: #facc15; }
+
+    .exp-item, .edu-item {
+      padding: 12px 0;
+      border-bottom: 1px solid #222;
+    }
+
+    .exp-item:last-child, .edu-item:last-child { border-bottom: none; }
+
+    .exp-item .role {
+      font-weight: 600;
+      color: #fff;
+      font-size: 0.95rem;
+    }
+
+    .exp-item .company-name {
+      color: #4f8ef7;
+      font-size: 0.88rem;
+      margin-top: 2px;
+    }
+
+    .exp-item .years, .edu-item .years {
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 3px;
+    }
+
+    .current-badge {
+      display: inline-block;
+      background: #1a3a1a;
+      border: 1px solid #2a5a2a;
+      color: #4ade80;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    .edu-item .school { font-weight: 600; color: #fff; font-size: 0.95rem; }
+    .edu-item .degree { color: #aaa; font-size: 0.85rem; margin-top: 2px; }
+
+    .section { margin-bottom: 24px; }
+    .section:last-child { margin-bottom: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏠 Hackerhouse Screener</h1>
+    <p class="subtitle">Paste a LinkedIn profile URL to screen an applicant</p>
+
+    <div class="input-row">
+      <input type="url" id="urlInput" placeholder="https://www.linkedin.com/in/username" />
+      <button id="screenBtn" onclick="screen()">Screen</button>
+    </div>
+
+    <div class="error" id="errorBox"></div>
+    <div class="loader" id="loader">⏳ Fetching profile data…</div>
+
+    <!-- Profile Card -->
+    <div class="card" id="profileCard">
+      <div class="card-header">
+        <h2 id="profileName">—</h2>
+        <p id="profileHeadline">—</p>
+      </div>
+      <div class="card-body">
+
+        <!-- Highlights -->
+        <div class="section">
+          <div class="section-title">Current Company</div>
+          <div class="highlight-row">
+            <div class="highlight">
+              <div class="label">Company</div>
+              <div class="value" id="companyName">—</div>
+            </div>
+            <div class="highlight">
+              <div class="label">Founded</div>
+              <div class="value accent" id="companyFounded">—</div>
+            </div>
+            <div class="highlight">
+              <div class="label">Age</div>
+              <div class="value green" id="companyAge">—</div>
+            </div>
+            <div class="highlight">
+              <div class="label">Size</div>
+              <div class="value" id="companySize">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Experience -->
+        <div class="section">
+          <div class="section-title">Experience</div>
+          <div id="expList"></div>
+        </div>
+
+        <!-- Education -->
+        <div class="section">
+          <div class="section-title">Education</div>
+          <div id="eduList"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function screen() {
+      const url = document.getElementById("urlInput").value.trim();
+      const btn = document.getElementById("screenBtn");
+      const loader = document.getElementById("loader");
+      const errorBox = document.getElementById("errorBox");
+      const profileCard = document.getElementById("profileCard");
+
+      if (!url) return;
+
+      // Reset
+      errorBox.className = "error";
+      profileCard.className = "card";
+      loader.className = "loader active";
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/screen", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+          throw new Error(data.error || "Unknown error");
+        }
+
+        render(data);
+      } catch (err) {
+        errorBox.textContent = "❌ " + err.message;
+        errorBox.className = "error active";
+      } finally {
+        loader.className = "loader";
+        btn.disabled = false;
+      }
+    }
+
+    function render(d) {
+      document.getElementById("profileName").textContent = d.name || "Unknown";
+      document.getElementById("profileHeadline").textContent =
+        [d.headline, d.location].filter(Boolean).join(" · ") || "—";
+
+      const co = d.current_company || {};
+      document.getElementById("companyName").textContent = co.name || "—";
+      document.getElementById("companyFounded").textContent = co.founded || "—";
+      document.getElementById("companyAge").textContent = co.age_years != null ? co.age_years + " yrs" : "—";
+      document.getElementById("companySize").textContent = co.size || "—";
+
+      // Experience
+      const expList = document.getElementById("expList");
+      expList.innerHTML = "";
+      (d.experiences || []).forEach(e => {
+        const div = document.createElement("div");
+        div.className = "exp-item";
+        const years = [e.start, e.current ? "present" : e.end].filter(Boolean).join(" – ");
+        div.innerHTML = `
+          <div class="role">${e.title || "—"}${e.current ? '<span class="current-badge">Current</span>' : ""}</div>
+          <div class="company-name">${e.company || "—"}</div>
+          <div class="years">${years || ""}</div>
+        `;
+        expList.appendChild(div);
+      });
+
+      // Education
+      const eduList = document.getElementById("eduList");
+      eduList.innerHTML = "";
+      (d.education || []).forEach(e => {
+        const div = document.createElement("div");
+        div.className = "edu-item";
+        const deg = [e.degree, e.field].filter(Boolean).join(", ");
+        const years = [e.start, e.end].filter(Boolean).join(" – ");
+        div.innerHTML = `
+          <div class="school">${e.school || "—"}</div>
+          <div class="degree">${deg || "—"}</div>
+          <div class="years">${years || ""}</div>
+        `;
+        eduList.appendChild(div);
+      });
+
+      document.getElementById("profileCard").className = "card active";
+    }
+
+    // Allow Enter key
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("urlInput").addEventListener("keydown", e => {
+        if (e.key === "Enter") screen();
+      });
+    });
+  </script>
+</body>
+</html>
