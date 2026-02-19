@@ -1,0 +1,21 @@
+{
+  "name": "hackerhouse-screener",
+  "version": "1.0.0",
+  "description": "LinkedIn screener for hackerhouse applicants",
+  "main": "dist/screen.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/screen.js",
+    "screen": "ts-node src/screen.ts"
+  },
+  "dependencies": {
+    "linkedin-private-api": "^1.1.2",
+    "chalk": "^4.1.2",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.1",
+    "@types/node": "^20.0.0"
+  }
+}
