@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Hackerhouse LinkedIn Screener
+Uses: RapidAPI - Fresh LinkedIn Profile Data
 Usage: python screen.py <linkedin_url>
 """
 
@@ -9,28 +10,38 @@ import os
 import requests
 from datetime import datetime
 
-PROXYCURL_API_KEY = os.environ.get("PROXYCURL_API_KEY", "")
+RAPIDAPI_KEY = os.environ.get("RAPIDAPI_KEY", "")
 CRUNCHBASE_API_KEY = os.environ.get("CRUNCHBASE_API_KEY", "")
+
+RAPIDAPI_HOST = "fresh-linkedin-profile-data.p.rapidapi.com"
 
 
 def get_linkedin_profile(url):
     resp = requests.get(
-        "https://nubela.co/proxycurl/api/v2/linkedin",
-        headers={"Authorization": f"Bearer {PROXYCURL_API_KEY}"},
-        params={"url": url, "use_cache": "if-present", "fallback_to_cache": "on-error"},
+        "https://fresh-linkedin-profile-data.p.rapidapi.com/get-linkedin-profile",
+        headers={
+            "X-RapidAPI-Key": RAPIDAPI_KEY,
+            "X-RapidAPI-Host": RAPIDAPI_HOST,
+        },
+        params={"linkedin_url": url, "include_skills": "false"},
     )
     resp.raise_for_status()
-    return resp.json()
+    result = resp.json()
+    return result.get("data", result)
 
 
-def get_company_details(company_linkedin_url):
+def get_company_profile(company_linkedin_url):
     resp = requests.get(
-        "https://nubela.co/proxycurl/api/linkedin/company",
-        headers={"Authorization": f"Bearer {PROXYCURL_API_KEY}"},
-        params={"url": company_linkedin_url, "use_cache": "if-present"},
+        "https://fresh-linkedin-profile-data.p.rapidapi.com/get-company-by-linkedinurl",
+        headers={
+            "X-RapidAPI-Key": RAPIDAPI_KEY,
+            "X-RapidAPI-Host": RAPIDAPI_HOST,
+        },
+        params={"linkedin_url": company_linkedin_url},
     )
     if resp.status_code == 200:
-        return resp.json()
+        result = resp.json()
+        return result.get("data", result)
     return None
 
 
@@ -63,10 +74,20 @@ def section(title):
     print("  " + "─" * (len(title) + 2))
 
 
+def parse_year(date_obj):
+    if not date_obj:
+        return None
+    if isinstance(date_obj, dict):
+        return date_obj.get("year")
+    if isinstance(date_obj, str) and len(date_obj) >= 4:
+        return date_obj[:4]
+    return None
+
+
 def main():
-    if not PROXYCURL_API_KEY:
-        print("❌  PROXYCURL_API_KEY not set.")
-        print("    Export it: export PROXYCURL_API_KEY=your_key")
+    if not RAPIDAPI_KEY:
+        print("❌  RAPIDAPI_KEY not set.")
+        print("    Export it: export RAPIDAPI_KEY=your_key")
         sys.exit(1)
 
     if len(sys.argv) < 2:
@@ -85,7 +106,7 @@ def main():
     try:
         profile = get_linkedin_profile(url)
     except requests.HTTPError as e:
-        print(f"❌  Proxycurl error {e.response.status_code}: {e.response.text}")
+        print(f"❌  RapidAPI error {e.response.status_code}: {e.response.text}")
         sys.exit(1)
     except Exception as e:
         print(f"❌  {e}")
@@ -94,7 +115,7 @@ def main():
     # Basic info
     name = profile.get("full_name") or "Unknown"
     headline = profile.get("headline") or ""
-    location = profile.get("city") or ""
+    location = profile.get("city") or profile.get("location") or ""
     print(f"\n  👤  {name}")
     if headline:
         print(f"      {headline}")
@@ -103,7 +124,7 @@ def main():
 
     # --- Current company ---
     experiences = profile.get("experiences") or []
-    current = next((e for e in experiences if e.get("ends_at") is None), None)
+    current = next((e for e in experiences if not e.get("ends_at") and not e.get("end_year")), None)
 
     current_company_name = None
     company_founded = None
@@ -112,14 +133,14 @@ def main():
     company_industry = None
 
     if current:
-        current_company_name = current.get("company")
-        company_linkedin_url = current.get("company_linkedin_profile_url")
+        current_company_name = current.get("company") or current.get("company_name")
+        company_linkedin_url = current.get("company_linkedin_url") or current.get("company_linkedin_profile_url")
 
         if company_linkedin_url:
-            co = get_company_details(company_linkedin_url)
+            co = get_company_profile(company_linkedin_url)
             if co:
-                company_founded = co.get("founded_year")
-                company_size = co.get("company_size_on_linkedin")
+                company_founded = co.get("founded_year") or co.get("founded")
+                company_size = co.get("company_size") or co.get("company_size_on_linkedin")
                 company_industry = co.get("industry")
 
         if not company_founded and current_company_name:
@@ -146,30 +167,32 @@ def main():
     section("Experience")
     if experiences:
         for exp in experiences:
-            company = exp.get("company") or "—"
-            title = exp.get("title") or "—"
-            start_y = exp.get("starts_at", {}).get("year") if exp.get("starts_at") else None
-            end_y = "present" if exp.get("ends_at") is None else (exp.get("ends_at", {}).get("year") if exp.get("ends_at") else None)
-            years = f"{start_y} – {end_y}" if start_y else (end_y or "")
-            tag = " ← current" if exp.get("ends_at") is None else ""
+            company = exp.get("company") or exp.get("company_name") or "—"
+            title = exp.get("title") or exp.get("position") or "—"
+            start_y = exp.get("start_year") or parse_year(exp.get("starts_at"))
+            ends_at = exp.get("ends_at") or exp.get("end_year")
+            is_current = not ends_at
+            end_y = "present" if is_current else (exp.get("end_year") or parse_year(exp.get("ends_at")) or "")
+            years = f"{start_y} – {end_y}" if start_y else (str(end_y) if end_y else "")
+            tag = " ← current" if is_current else ""
             print(f"  • {title} @ {company}  [{years}]{tag}")
     else:
         print("  No experience listed.")
 
     # --- Education ---
     section("Education")
-    education = profile.get("education") or []
+    education = profile.get("educations") or profile.get("education") or []
     if education:
         for edu in education:
-            school = edu.get("school") or "—"
-            degree = edu.get("degree_name") or ""
-            field = edu.get("field_of_study") or ""
+            school = edu.get("school") or edu.get("institution") or "—"
+            degree = edu.get("degree") or edu.get("degree_name") or ""
+            field = edu.get("field_of_study") or edu.get("field") or ""
             deg_str = ", ".join(filter(None, [degree, field])) or "—"
-            start_y = edu.get("starts_at", {}).get("year") if edu.get("starts_at") else None
-            end_y = edu.get("ends_at", {}).get("year") if edu.get("ends_at") else None
+            start_y = edu.get("start_year") or parse_year(edu.get("starts_at"))
+            end_y = edu.get("end_year") or parse_year(edu.get("ends_at"))
             years = f"{start_y} – {end_y}" if start_y else ""
             print(f"  • {school}")
-            print(f"    {deg_str}  {('(' + years + ')') if years else ''}")
+            print(f"    {deg_str}  {('(' + str(years) + ')') if years else ''}")
     else:
         print("  No education listed.")
 
