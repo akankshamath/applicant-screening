@@ -279,8 +279,15 @@ async function getProfileWithExa(linkedinUrl: string): Promise<ProfileResponse> 
     // Parse education
     const education: Education[] = [];
     const educationSection = sections.find(s => s.startsWith('Education')) || '';
+
+    // Debug: Log the full education section
+    console.log('[Exa] Education section text:', educationSection.substring(0, 500));
+
     const eduLines = educationSection.split('\n').filter(l => l.trim().startsWith('###'));
+    console.log('[Exa] Found', eduLines.length, 'education entries (lines starting with ###)');
+
     for (const line of eduLines) {
+      console.log('[Exa] Parsing education line:', line);
       // Format: "### Degree at School" or "### Degree, Details at School"
       const match = line.match(/###\s*(.+?)\s+at\s+(.+)/);
       if (match) {
@@ -288,9 +295,14 @@ async function getProfileWithExa(linkedinUrl: string): Promise<ProfileResponse> 
         let school = match[2].trim();
         // Remove [...]<web_link> markup
         school = school.replace(/\[([^\]]+)\]<web_link>/g, '$1');
+        console.log('[Exa] Parsed education:', { school, degree });
         education.push({ school, degree, field: null, start: null, end: null });
+      } else {
+        console.log('[Exa] Failed to match education line format');
       }
     }
+
+    console.log('[Exa] Total education entries parsed:', education.length);
 
     // Parse current experience
     let currentCompany: string | null = null;
