@@ -205,8 +205,8 @@
     <div class="filters" id="filters" style="display: none;">
       <input type="text" id="filterSchool" placeholder="Filter by school..." oninput="applyFilters()">
       <input type="text" id="filterCompany" placeholder="Filter by company..." oninput="applyFilters()">
-      <input type="number" id="filterMinTenure" placeholder="Min tenure (years)" oninput="applyFilters()">
-      <input type="number" id="filterMaxTenure" placeholder="Max tenure (years)" oninput="applyFilters()">
+      <input type="number" id="filterMinTenure" placeholder="Min time (years)" oninput="applyFilters()">
+      <input type="number" id="filterMaxTenure" placeholder="Max time (years)" oninput="applyFilters()">
     </div>
 
     <!-- Results Table -->
@@ -216,7 +216,7 @@
           <tr>
             <th>Name</th>
             <th>Current Company</th>
-            <th>Tenure</th>
+            <th>Time</th>
             <th>School</th>
             <th>Degree</th>
             <th>Profile</th>
@@ -424,7 +424,7 @@
 
       const filtered = applyFiltersToResults();
       const csv = [
-        ["Name", "Current Company", "Tenure", "School", "Degree", "LinkedIn URL"].join(","),
+        ["Name", "Current Company", "Time", "School", "Degree", "LinkedIn URL"].join(","),
         ...filtered.map(r => [
           `"${r.name}"`,
           `"${r.currentCompany}"`,
