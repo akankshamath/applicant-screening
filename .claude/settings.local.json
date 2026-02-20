@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(sudo chown:*)",
+      "Bash(npm install:*)",
+      "Bash(kill:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(npm run build:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

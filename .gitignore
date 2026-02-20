@@ -1,1 +1,33 @@
+# Environment variables and secrets
 .env
+.env.local
+.env.*.local
+
+# Node dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Session data and caches
+sessions.json
+*.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python (if needed in future)
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/

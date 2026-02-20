@@ -15,7 +15,7 @@
       padding: 40px 20px;
     }
 
-    .container { max-width: 760px; margin: 0 auto; }
+    .container { max-width: 1200px; margin: 0 auto; }
 
     h1 {
       font-size: 1.6rem;
@@ -30,51 +30,143 @@
       margin-bottom: 32px;
     }
 
-    .input-row {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 32px;
-    }
-
-    input[type="url"] {
-      flex: 1;
-      padding: 12px 16px;
-      border-radius: 10px;
-      border: 1px solid #2a2a2a;
+    /* Bulk input */
+    .bulk-section {
       background: #1a1a1a;
-      color: #fff;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border 0.2s;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 28px;
     }
 
-    input[type="url"]:focus { border-color: #4f8ef7; }
+    .bulk-section h2 {
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #2a2a2a;
+      background: #111;
+      color: #fff;
+      font-size: 0.88rem;
+      font-family: monospace;
+      resize: vertical;
+      outline: none;
+      min-height: 120px;
+    }
+
+    textarea:focus { border-color: #4f8ef7; }
+
+    .bulk-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+      align-items: center;
+    }
 
     button {
       padding: 12px 24px;
-      border-radius: 10px;
+      border-radius: 8px;
       border: none;
       background: #4f8ef7;
       color: #fff;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 600;
       cursor: pointer;
       transition: background 0.2s, opacity 0.2s;
-      white-space: nowrap;
     }
 
     button:hover { background: #3a7de0; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .loader {
-      display: none;
-      text-align: center;
-      padding: 40px;
+    button.secondary {
+      background: transparent;
+      border: 1px solid #444;
       color: #888;
-      font-size: 0.9rem;
     }
 
-    .loader.active { display: block; }
+    button.secondary:hover { border-color: #888; color: #ccc; background: transparent; }
+
+    .progress {
+      color: #888;
+      font-size: 0.85rem;
+    }
+
+    /* Filters */
+    .filters {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filters input {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #2a2a2a;
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .filters input:focus { border-color: #4f8ef7; }
+
+    /* Table */
+    .results-table {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: #111;
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #888;
+    }
+
+    td {
+      padding: 14px 16px;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #222;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    tbody tr:hover { background: #1a1a1a; }
+
+    td a {
+      color: #4f8ef7;
+      text-decoration: none;
+    }
+
+    td a:hover { text-decoration: underline; }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
 
     .error {
       display: none;
@@ -88,275 +180,268 @@
     }
 
     .error.active { display: block; }
-
-    .card {
-      display: none;
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      border-radius: 14px;
-      overflow: hidden;
-      margin-bottom: 20px;
-    }
-
-    .card.active { display: block; }
-
-    .card-header {
-      padding: 20px 24px;
-      border-bottom: 1px solid #222;
-    }
-
-    .card-header h2 {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .card-header p {
-      font-size: 0.85rem;
-      color: #888;
-      margin-top: 3px;
-    }
-
-    .card-body { padding: 20px 24px; }
-
-    .section-title {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #666;
-      margin-bottom: 12px;
-    }
-
-    .highlight-row {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 24px;
-    }
-
-    .highlight {
-      background: #111;
-      border: 1px solid #2a2a2a;
-      border-radius: 10px;
-      padding: 14px 18px;
-      flex: 1;
-      min-width: 140px;
-    }
-
-    .highlight .label {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #666;
-      margin-bottom: 4px;
-    }
-
-    .highlight .value {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .highlight .value.accent { color: #4f8ef7; }
-    .highlight .value.green { color: #4ade80; }
-    .highlight .value.yellow { color: #facc15; }
-
-    .exp-item, .edu-item {
-      padding: 12px 0;
-      border-bottom: 1px solid #222;
-    }
-
-    .exp-item:last-child, .edu-item:last-child { border-bottom: none; }
-
-    .exp-item .role {
-      font-weight: 600;
-      color: #fff;
-      font-size: 0.95rem;
-    }
-
-    .exp-item .company-name {
-      color: #4f8ef7;
-      font-size: 0.88rem;
-      margin-top: 2px;
-    }
-
-    .exp-item .years, .edu-item .years {
-      font-size: 0.8rem;
-      color: #666;
-      margin-top: 3px;
-    }
-
-    .current-badge {
-      display: inline-block;
-      background: #1a3a1a;
-      border: 1px solid #2a5a2a;
-      color: #4ade80;
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 20px;
-      margin-left: 8px;
-      vertical-align: middle;
-    }
-
-    .edu-item .school { font-weight: 600; color: #fff; font-size: 0.95rem; }
-    .edu-item .degree { color: #aaa; font-size: 0.85rem; margin-top: 2px; }
-
-    .section { margin-bottom: 24px; }
-    .section:last-child { margin-bottom: 0; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🏠 Hackerhouse Screener</h1>
-    <p class="subtitle">Paste a LinkedIn profile URL to screen an applicant</p>
-
-    <div class="input-row">
-      <input type="url" id="urlInput" placeholder="https://www.linkedin.com/in/username" />
-      <button id="screenBtn" onclick="screen()">Screen</button>
-    </div>
+    <p class="subtitle">Bulk screen LinkedIn profiles — paste URLs, get a scannable table</p>
 
     <div class="error" id="errorBox"></div>
-    <div class="loader" id="loader">⏳ Fetching profile data…</div>
 
-    <!-- Profile Card -->
-    <div class="card" id="profileCard">
-      <div class="card-header">
-        <h2 id="profileName">—</h2>
-        <p id="profileHeadline">—</p>
+    <!-- Bulk Input -->
+    <div class="bulk-section">
+      <h2>📋 Paste LinkedIn URLs</h2>
+      <textarea id="urlsInput" placeholder="Paste LinkedIn profile URLs here (one per line)&#10;https://www.linkedin.com/in/username1&#10;https://www.linkedin.com/in/username2&#10;https://www.linkedin.com/in/username3"></textarea>
+      <div class="bulk-actions">
+        <button onclick="screenAll()" id="screenBtn">Screen All</button>
+        <button class="secondary" onclick="clearResults()">Clear Results</button>
+        <button class="secondary" onclick="exportCSV()">Export CSV</button>
+        <span class="progress" id="progress"></span>
       </div>
-      <div class="card-body">
+    </div>
 
-        <!-- Highlights -->
-        <div class="section">
-          <div class="section-title">Current Company</div>
-          <div class="highlight-row">
-            <div class="highlight">
-              <div class="label">Company</div>
-              <div class="value" id="companyName">—</div>
-            </div>
-            <div class="highlight">
-              <div class="label">Founded</div>
-              <div class="value accent" id="companyFounded">—</div>
-            </div>
-            <div class="highlight">
-              <div class="label">Age</div>
-              <div class="value green" id="companyAge">—</div>
-            </div>
-            <div class="highlight">
-              <div class="label">Size</div>
-              <div class="value" id="companySize">—</div>
-            </div>
-          </div>
-        </div>
+    <!-- Filters -->
+    <div class="filters" id="filters" style="display: none;">
+      <input type="text" id="filterSchool" placeholder="Filter by school..." oninput="applyFilters()">
+      <input type="text" id="filterCompany" placeholder="Filter by company..." oninput="applyFilters()">
+      <input type="number" id="filterMinTenure" placeholder="Min tenure (years)" oninput="applyFilters()">
+      <input type="number" id="filterMaxTenure" placeholder="Max tenure (years)" oninput="applyFilters()">
+    </div>
 
-        <!-- Experience -->
-        <div class="section">
-          <div class="section-title">Experience</div>
-          <div id="expList"></div>
-        </div>
+    <!-- Results Table -->
+    <div class="results-table" id="resultsTable" style="display: none;">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Current Company</th>
+            <th>Tenure</th>
+            <th>School</th>
+            <th>Degree</th>
+            <th>Profile</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody">
+        </tbody>
+      </table>
+    </div>
 
-        <!-- Education -->
-        <div class="section">
-          <div class="section-title">Education</div>
-          <div id="eduList"></div>
-        </div>
-
-      </div>
+    <div class="empty-state" id="emptyState">
+      Paste LinkedIn URLs above and click "Screen All" to get started
     </div>
   </div>
 
   <script>
-    async function screen() {
-      const url = document.getElementById("urlInput").value.trim();
-      const btn = document.getElementById("screenBtn");
-      const loader = document.getElementById("loader");
+    let allResults = [];
+
+    // HTML escape function to prevent XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function showError(message) {
       const errorBox = document.getElementById("errorBox");
-      const profileCard = document.getElementById("profileCard");
+      errorBox.textContent = message;
+      errorBox.className = "error active";
+      setTimeout(() => {
+        errorBox.className = "error";
+      }, 5000);
+    }
 
-      if (!url) return;
+    async function screenAll() {
+      const urls = document.getElementById("urlsInput").value
+        .split("\n")
+        .map(u => u.trim())
+        .filter(u => u && u.includes("linkedin.com"));
 
-      // Reset
-      errorBox.className = "error";
-      profileCard.className = "card";
-      loader.className = "loader active";
-      btn.disabled = true;
+      if (urls.length === 0) {
+        showError("Please paste at least one LinkedIn URL");
+        return;
+      }
 
-      try {
-        const res = await fetch("/screen", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url })
-        });
+      document.getElementById("errorBox").className = "error";
+      document.getElementById("screenBtn").disabled = true;
+      allResults = [];
+      let failureCount = 0;
 
-        const data = await res.json();
+      for (let i = 0; i < urls.length; i++) {
+        document.getElementById("progress").textContent = `Processing ${i + 1} of ${urls.length}...`;
 
-        if (!res.ok || data.error) {
-          throw new Error(data.error || "Unknown error");
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+          const res = await fetch("/screen", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: urls[i] }),
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+          const data = await res.json();
+
+          if (res.ok && !data.error) {
+            const posStart = data.current_company?.position_start;
+            let tenure = "—";
+            let tenureYears = null;
+
+            if (posStart && posStart.year) {
+              const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+              const month = posStart.month ? monthNames[posStart.month - 1] : "";
+              tenure = `${month} ${posStart.year}–Present`.trim();
+
+              // Calculate tenure in years
+              const now = new Date();
+              const startYear = posStart.year;
+              const startMonth = posStart.month || 1;
+              tenureYears = now.getFullYear() - startYear;
+              if (now.getMonth() + 1 < startMonth) {
+                tenureYears -= 1;
+              }
+            }
+
+            allResults.push({
+              url: urls[i],
+              name: data.name,
+              currentCompany: data.current_company?.name || "—",
+              tenure: tenure,
+              tenureYears: tenureYears,
+              school: data.education[0]?.school || "—",
+              degree: data.education[0]?.degree || "—",
+            });
+          } else {
+            failureCount++;
+            allResults.push({
+              url: urls[i],
+              name: "Error",
+              currentCompany: data.error || "Failed to fetch",
+              tenure: "—",
+              tenureYears: null,
+              school: "—",
+              degree: "—",
+            });
+          }
+        } catch (err) {
+          failureCount++;
+          let errorMsg = "Network error";
+          if (err.name === 'AbortError') {
+            errorMsg = "Request timeout (30s)";
+          } else if (err.message) {
+            errorMsg = err.message;
+          }
+          allResults.push({
+            url: urls[i],
+            name: "Error",
+            currentCompany: errorMsg,
+            tenure: "—",
+            tenureYears: null,
+            school: "—",
+            degree: "—",
+          });
         }
 
-        render(data);
-      } catch (err) {
-        errorBox.textContent = "❌ " + err.message;
-        errorBox.className = "error active";
-      } finally {
-        loader.className = "loader";
-        btn.disabled = false;
+        renderResults();
       }
+
+      const successCount = urls.length - failureCount;
+      document.getElementById("progress").textContent = `✓ Screened ${urls.length} profiles (${successCount} successful, ${failureCount} failed)`;
+
+      if (failureCount > 0 && failureCount === urls.length) {
+        showError("All requests failed. Please check your API credentials and try again.");
+      } else if (failureCount > urls.length / 2) {
+        showError(`${failureCount} out of ${urls.length} requests failed. Some profiles could not be retrieved.`);
+      }
+
+      document.getElementById("screenBtn").disabled = false;
     }
 
-    function render(d) {
-      document.getElementById("profileName").textContent = d.name || "Unknown";
-      document.getElementById("profileHeadline").textContent =
-        [d.headline, d.location].filter(Boolean).join(" · ") || "—";
+    function renderResults() {
+      const tbody = document.getElementById("resultsBody");
+      const table = document.getElementById("resultsTable");
+      const empty = document.getElementById("emptyState");
+      const filters = document.getElementById("filters");
 
-      const co = d.current_company || {};
-      document.getElementById("companyName").textContent = co.name || "—";
-      document.getElementById("companyFounded").textContent = co.founded || "—";
-      document.getElementById("companyAge").textContent = co.age_years != null ? co.age_years + " yrs" : "—";
-      document.getElementById("companySize").textContent = co.size || "—";
+      if (allResults.length === 0) {
+        table.style.display = "none";
+        empty.style.display = "block";
+        filters.style.display = "none";
+        return;
+      }
 
-      // Experience
-      const expList = document.getElementById("expList");
-      expList.innerHTML = "";
-      (d.experiences || []).forEach(e => {
-        const div = document.createElement("div");
-        div.className = "exp-item";
-        const years = [e.start, e.current ? "present" : e.end].filter(Boolean).join(" – ");
-        div.innerHTML = `
-          <div class="role">${e.title || "—"}${e.current ? '<span class="current-badge">Current</span>' : ""}</div>
-          <div class="company-name">${e.company || "—"}</div>
-          <div class="years">${years || ""}</div>
+      table.style.display = "block";
+      empty.style.display = "none";
+      filters.style.display = "flex";
+
+      const filtered = applyFiltersToResults();
+
+      tbody.innerHTML = filtered.map(r => {
+        return `
+          <tr>
+            <td><strong>${escapeHtml(r.name)}</strong></td>
+            <td>${escapeHtml(r.currentCompany)}</td>
+            <td>${escapeHtml(r.tenure)}</td>
+            <td>${escapeHtml(r.school)}</td>
+            <td>${escapeHtml(r.degree)}</td>
+            <td><a href="${escapeHtml(r.url)}" target="_blank" rel="noopener noreferrer">View</a></td>
+          </tr>
         `;
-        expList.appendChild(div);
-      });
-
-      // Education
-      const eduList = document.getElementById("eduList");
-      eduList.innerHTML = "";
-      (d.education || []).forEach(e => {
-        const div = document.createElement("div");
-        div.className = "edu-item";
-        const deg = [e.degree, e.field].filter(Boolean).join(", ");
-        const years = [e.start, e.end].filter(Boolean).join(" – ");
-        div.innerHTML = `
-          <div class="school">${e.school || "—"}</div>
-          <div class="degree">${deg || "—"}</div>
-          <div class="years">${years || ""}</div>
-        `;
-        eduList.appendChild(div);
-      });
-
-      document.getElementById("profileCard").className = "card active";
+      }).join("");
     }
 
-    // Allow Enter key
-    document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("urlInput").addEventListener("keydown", e => {
-        if (e.key === "Enter") screen();
+    function applyFiltersToResults() {
+      const schoolFilter = (document.getElementById("filterSchool")?.value || "").toLowerCase();
+      const companyFilter = (document.getElementById("filterCompany")?.value || "").toLowerCase();
+      const minTenure = parseInt(document.getElementById("filterMinTenure")?.value || "0");
+      const maxTenure = parseInt(document.getElementById("filterMaxTenure")?.value || "999");
+
+      return allResults.filter(r => {
+        if (schoolFilter && !r.school.toLowerCase().includes(schoolFilter)) return false;
+        if (companyFilter && !r.currentCompany.toLowerCase().includes(companyFilter)) return false;
+        if (r.tenureYears !== null && (r.tenureYears < minTenure || r.tenureYears > maxTenure)) return false;
+        return true;
       });
-    });
+    }
+
+    function applyFilters() {
+      renderResults();
+    }
+
+    function clearResults() {
+      allResults = [];
+      renderResults();
+      document.getElementById("progress").textContent = "";
+    }
+
+    function exportCSV() {
+      if (allResults.length === 0) {
+        alert("No results to export");
+        return;
+      }
+
+      const filtered = applyFiltersToResults();
+      const csv = [
+        ["Name", "Current Company", "Tenure", "School", "Degree", "LinkedIn URL"].join(","),
+        ...filtered.map(r => [
+          `"${r.name}"`,
+          `"${r.currentCompany}"`,
+          `"${r.tenure}"`,
+          `"${r.school}"`,
+          `"${r.degree}"`,
+          `"${r.url}"`
+        ].join(","))
+      ].join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `linkedin-screen-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+    }
   </script>
 </body>
 </html>
