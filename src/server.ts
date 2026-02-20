@@ -546,12 +546,28 @@ app.post('/screen', async (req: Request, res: Response) => {
     if (schoolName.includes('high school') ||
         schoolName.includes('secondary school') ||
         schoolName.includes('preparatory') ||
-        schoolName.includes('prep school')) {
+        schoolName.includes('prep school') ||
+        schoolName.includes('uwc ') ||  // United World Colleges
+        schoolName.includes('uwc south') ||
+        schoolName.includes('uwc east') ||
+        schoolName.includes('international school') ||
+        schoolName.includes('sixth form') ||
+        schoolName.includes('college preparatory')) {
       return true;
     }
 
     // Check for high school indicators in degree name
     if (degreeName.includes('high school') ||
+        degreeName.includes('ib diploma') ||  // International Baccalaureate
+        degreeName.includes('international baccalaureate') ||
+        degreeName.includes('a-level') ||
+        degreeName.includes('a level') ||
+        degreeName.includes('gcse') ||
+        degreeName.includes('o-level') ||
+        degreeName.includes('cbse') ||
+        degreeName.includes('icse') ||
+        degreeName.includes('grade 12') ||
+        degreeName.includes('secondary education') ||
         degreeName === '—' ||
         degreeName === '') {
       return true;
