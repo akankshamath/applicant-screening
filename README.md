@@ -134,8 +134,8 @@ http://localhost:5055
    - Name
    - Current company
    - Tenure (e.g., "June 2021–Present")
-   - School
-   - Degree
+   - School (most recent by date)
+   - Degree (most recent by date)
 
 ### Filter results:
 
@@ -147,6 +147,14 @@ Use the filter boxes to narrow down:
 ### Export:
 
 Click **"Export CSV"** to download the filtered results.
+
+---
+
+**Note about education data:**
+- The screener shows the **most recent education** (sorted by date)
+- If currently enrolled → shows current school
+- If graduated recently → shows that degree
+- Shows whatever is most recent on their LinkedIn profile (college, high school, etc.)
 
 ---
 
@@ -171,52 +179,37 @@ Click **"Export CSV"** to download the filtered results.
 
 ## Running in production
 
-**Before deploying:**
+**For AWS Lightsail deployment**, see the complete step-by-step guide:
+👉 **[DEPLOY_LIGHTSAIL.md](DEPLOY_LIGHTSAIL.md)**
 
-1. **Install dependencies** (use exact versions):
-   ```bash
-   npm ci  # Use package-lock.json for reproducible installs
-   ```
+**Quick summary:**
 
-2. **Build the TypeScript code**:
+1. **Build the TypeScript code**:
    ```bash
+   npm ci
    npm run build
    ```
 
-3. **Set environment variables** (don't use .env in production):
-   ```bash
-   export LI_AT_COOKIE="your_cookie_here"
-   export EXA_API_KEY="your_key_here"
-   export PORT=5055
-   ```
-
-4. **Start the server**:
-   ```bash
-   npm start
-   ```
-
-5. **Use a process manager** (like PM2) for production:
+2. **Use PM2 process manager** (auto-restart on crashes/reboots):
    ```bash
    npm install -g pm2
-   pm2 start dist/server.js --name linkedin-screener
+   pm2 start ecosystem.config.js
    pm2 save
-   pm2 startup  # Auto-restart on server reboot
+   pm2 startup  # Follow the command it gives you
    ```
 
-6. **Use HTTPS** to protect credentials in transit:
-   - Set up a reverse proxy (nginx/Apache) with SSL
-   - Use Let's Encrypt for free SSL certificates
-   - Never expose this service over plain HTTP in production
+3. **Set environment variables** in `.env` file (server only, never commit):
+   ```
+   LI_AT_COOKIE=your_cookie_here
+   EXA_API_KEY=your_key_here
+   PORT=5055
+   ```
 
-7. **Add authentication**:
-   - This tool has NO built-in authentication
+4. **Security recommendations**:
+   - This tool has NO built-in authentication by default
    - Add basic auth, OAuth, or firewall rules before deploying
-   - Consider using a VPN or IP whitelist
-
-8. **Monitor and log**:
-   - Set up logging and monitoring
-   - Watch for failed requests or API errors
-   - Set up alerts for high error rates
+   - Use HTTPS with a reverse proxy (nginx) and Let's Encrypt SSL
+   - Consider IP whitelisting or VPN-only access
 
 ---
 
