@@ -283,34 +283,52 @@ async function getProfileWithExa(linkedinUrl: string): Promise<ProfileResponse> 
     // Debug: Log the full education section
     console.log('[Exa] Education section text:', educationSection.substring(0, 500));
 
-    const eduLines = educationSection.split('\n').filter(l => l.trim().startsWith('###'));
-    console.log('[Exa] Found', eduLines.length, 'education entries (lines starting with ###)');
+    // Split by ### to get each education block
+    const eduBlocks = educationSection.split(/\n###\s+/).filter(b => b.trim() && !b.startsWith('Education'));
+    console.log('[Exa] Found', eduBlocks.length, 'education entries');
 
-    for (const line of eduLines) {
-      console.log('[Exa] Parsing education line:', line);
-      // Format: "### Degree at School" or "### at School" (degree missing)
-      let match = line.match(/###\s*(.+?)\s+at\s+(.+)/);
+    for (const block of eduBlocks) {
+      const lines = block.split('\n');
+      if (lines.length === 0) continue;
+
+      const firstLine = lines[0];
+      console.log('[Exa] Parsing education block:', firstLine);
+
+      // Parse school and degree from first line
+      let match = firstLine.match(/(.+?)\s+at\s+(.+)/);
+      let school: string;
+      let degree: string;
 
       if (match) {
-        const degree = match[1].trim();
-        let school = match[2].trim();
-        // Remove [...]<web_link> markup
+        degree = match[1].trim();
+        school = match[2].trim();
         school = school.replace(/\[([^\]]+)\]<web_link>/g, '$1');
-        console.log('[Exa] Parsed education:', { school, degree });
-        education.push({ school, degree, field: null, start: null, end: null });
       } else {
-        // Try pattern without degree: "### at School"
-        match = line.match(/###\s*at\s+(.+)/);
+        match = firstLine.match(/at\s+(.+)/);
         if (match) {
-          let school = match[1].trim();
-          school = school.replace(/\[([^\]]+)\]<web_link>/g, '$1');
-          const degree = "—";  // Use placeholder when degree is missing
-          console.log('[Exa] Parsed education (no degree):', { school, degree });
-          education.push({ school, degree, field: null, start: null, end: null });
+          school = match[1].trim().replace(/\[([^\]]+)\]<web_link>/g, '$1');
+          degree = "—";
         } else {
-          console.log('[Exa] Failed to match education line format');
+          console.log('[Exa] Failed to parse education');
+          continue;
         }
       }
+
+      // Parse dates from second line (e.g., "2023 - 2027 • 4 years" or "2020 - 2024")
+      let startYear: number | null = null;
+      let endYear: number | null = null;
+
+      if (lines.length > 1) {
+        const dateLine = lines[1];
+        const dateMatch = dateLine.match(/(\d{4})\s*-\s*(\d{4}|Present)/);
+        if (dateMatch) {
+          startYear = parseInt(dateMatch[1], 10);
+          endYear = dateMatch[2] === 'Present' ? null : parseInt(dateMatch[2], 10);
+        }
+      }
+
+      console.log('[Exa] Parsed education:', { school, degree, start: startYear, end: endYear });
+      education.push({ school, degree, field: null, start: startYear, end: endYear });
     }
 
     console.log('[Exa] Total education entries parsed:', education.length);
@@ -388,88 +406,26 @@ async function getProfileWithExa(linkedinUrl: string): Promise<ProfileResponse> 
       }
     }
 
-    // Filter and prioritize education (same as LinkedIn method)
-    const isHighSchool = (edu: Education): boolean => {
-      const schoolName = (edu.school || '').toLowerCase();
-      const degreeName = (edu.degree || '').toLowerCase();
+    // Sort education by date (most recent first)
+    // Current education (end === null) should come first
+    education.sort((a, b) => {
+      // If one is current (no end date) and the other is not, current comes first
+      if (a.end === null && b.end !== null) return -1;
+      if (a.end !== null && b.end === null) return 1;
 
-      // If school name contains "university" or "college", it's NOT high school
-      // (even if degree is missing)
-      if (schoolName.includes('university') ||
-          schoolName.includes('college') && !schoolName.includes('uwc')) {
-        return false;
-      }
+      // If both are current or both have end dates, compare end dates
+      const aEnd = a.end ?? (a.start ?? 0);
+      const bEnd = b.end ?? (b.start ?? 0);
+      return bEnd - aEnd;  // Most recent first
+    });
 
-      // Check for explicit high school indicators in school name
-      if (schoolName.includes('high school') ||
-          schoolName.includes('secondary school') ||
-          schoolName.includes('preparatory') ||
-          schoolName.includes('prep school') ||
-          schoolName.includes('uwc ') ||
-          schoolName.includes('uwc south') ||
-          schoolName.includes('uwc east') ||
-          schoolName.includes('international school') ||
-          schoolName.includes('sixth form') ||
-          schoolName.includes('college preparatory')) {
-        return true;
-      }
-
-      // Check degree name patterns
-      if (degreeName.includes('high school') ||
-          degreeName.includes('ib diploma') ||
-          degreeName.includes('ibdp') ||
-          degreeName.includes('international baccalaureate') ||
-          degreeName.includes('a-level') ||
-          degreeName.includes('a level') ||
-          degreeName.includes('gcse') ||
-          degreeName.includes('o-level') ||
-          degreeName.includes('cbse') ||
-          degreeName.includes('icse') ||
-          degreeName.includes('grade 12') ||
-          degreeName.includes('secondary education') ||
-          degreeName.includes('noc ') ||  // NUS Overseas Colleges program
-          degreeName.includes('batch ')) {  // Program batches
-        return true;
-      }
-
-      // If degree is missing (—) but school doesn't indicate university/college,
-      // treat as unknown (not high school, not college)
-      if (degreeName === '—' || degreeName === '') {
-        return false;  // Don't assume it's high school
-      }
-
-      return false;
-    };
-
-    const getEducationRank = (edu: Education): number => {
-      const degreeName = (edu.degree || '').toLowerCase();
-      const schoolName = (edu.school || '').toLowerCase();
-
-      if (degreeName.includes('phd') || degreeName.includes('ph.d') || degreeName.includes('doctorate')) return 5;
-      if (degreeName.includes('master') || degreeName.includes('mba') || degreeName.includes('ms') || degreeName.includes('ma')) return 4;
-      if (degreeName.includes('bachelor') || degreeName.includes('bs') || degreeName.includes('ba') || degreeName.includes('b.tech') || degreeName.includes('btech')) return 3;
-      if (degreeName.includes('associate') || degreeName.includes('diploma')) return 2;
-      if (isHighSchool(edu)) return 0;
-
-      // If degree is missing but school is a university, assume bachelor's level
-      if ((degreeName === '—' || degreeName === '') && schoolName.includes('university')) {
-        return 3;  // Same as bachelor's
-      }
-
-      return 1;
-    };
-
-    const collegeEducation = education.filter(edu => !isHighSchool(edu));
-    const filteredEducation = collegeEducation.length > 0 ? collegeEducation : education;
-    filteredEducation.sort((a, b) => getEducationRank(b) - getEducationRank(a));
-
-    console.log('[Exa] After filtering: showing', filteredEducation.length, 'education entries');
+    console.log('[Exa] Sorted education by date, showing most recent:', education[0]);
 
     return {
       name,
       headline: content.title?.split('|')[1]?.trim() || null,
       location,
-      education: filteredEducation,
+      education,  // Return all education (sorted by date)
       experiences,
       current_company: {
         name: currentCompany,
@@ -637,67 +593,20 @@ app.post('/screen', async (req: Request, res: Response) => {
     };
   });
 
-  // Helper function to detect if education is high school
-  const isHighSchool = (edu: Education): boolean => {
-    const schoolName = (edu.school || '').toLowerCase();
-    const degreeName = (edu.degree || '').toLowerCase();
+  // Sort education by date (most recent first) - same logic as Exa method
+  const education = allEducation;
+  education.sort((a, b) => {
+    // If one is current (no end date) and the other is not, current comes first
+    if (a.end === null && b.end !== null) return -1;
+    if (a.end !== null && b.end === null) return 1;
 
-    // Check for high school indicators in school name
-    if (schoolName.includes('high school') ||
-        schoolName.includes('secondary school') ||
-        schoolName.includes('preparatory') ||
-        schoolName.includes('prep school') ||
-        schoolName.includes('uwc ') ||  // United World Colleges
-        schoolName.includes('uwc south') ||
-        schoolName.includes('uwc east') ||
-        schoolName.includes('international school') ||
-        schoolName.includes('sixth form') ||
-        schoolName.includes('college preparatory')) {
-      return true;
-    }
+    // If both are current or both have end dates, compare end dates
+    const aEnd = a.end ?? (a.start ?? 0);
+    const bEnd = b.end ?? (b.start ?? 0);
+    return bEnd - aEnd;  // Most recent first
+  });
 
-    // Check for high school indicators in degree name
-    if (degreeName.includes('high school') ||
-        degreeName.includes('ib diploma') ||  // International Baccalaureate
-        degreeName.includes('international baccalaureate') ||
-        degreeName.includes('a-level') ||
-        degreeName.includes('a level') ||
-        degreeName.includes('gcse') ||
-        degreeName.includes('o-level') ||
-        degreeName.includes('cbse') ||
-        degreeName.includes('icse') ||
-        degreeName.includes('grade 12') ||
-        degreeName.includes('secondary education') ||
-        degreeName === '—' ||
-        degreeName === '') {
-      return true;
-    }
-
-    return false;
-  };
-
-  // Helper function to rank education level (higher = more important)
-  const getEducationRank = (edu: Education): number => {
-    const degreeName = (edu.degree || '').toLowerCase();
-
-    if (degreeName.includes('phd') || degreeName.includes('ph.d') || degreeName.includes('doctorate')) return 5;
-    if (degreeName.includes('master') || degreeName.includes('mba') || degreeName.includes('ms') || degreeName.includes('ma')) return 4;
-    if (degreeName.includes('bachelor') || degreeName.includes('bs') || degreeName.includes('ba') || degreeName.includes('b.tech') || degreeName.includes('btech')) return 3;
-    if (degreeName.includes('associate') || degreeName.includes('diploma')) return 2;
-    if (isHighSchool(edu)) return 0;
-
-    // Unknown degree type, but not high school
-    return 1;
-  };
-
-  // Filter and sort education: prioritize college over high school
-  const collegeEducation = allEducation.filter(edu => !isHighSchool(edu));
-
-  // If there's college education, use only that; otherwise include high school
-  const education = collegeEducation.length > 0 ? collegeEducation : allEducation;
-
-  // Sort by education level (highest degree first)
-  education.sort((a, b) => getEducationRank(b) - getEducationRank(a));
+  console.log('[LinkedIn] Sorted education by date, most recent:', education[0]);
 
   // --- Experience ---
   const experiences: Experience[] = [];
