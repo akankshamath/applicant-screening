@@ -288,8 +288,9 @@ async function getProfileWithExa(linkedinUrl: string): Promise<ProfileResponse> 
 
     for (const line of eduLines) {
       console.log('[Exa] Parsing education line:', line);
-      // Format: "### Degree at School" or "### Degree, Details at School"
-      const match = line.match(/###\s*(.+?)\s+at\s+(.+)/);
+      // Format: "### Degree at School" or "### at School" (degree missing)
+      let match = line.match(/###\s*(.+?)\s+at\s+(.+)/);
+
       if (match) {
         const degree = match[1].trim();
         let school = match[2].trim();
@@ -298,7 +299,17 @@ async function getProfileWithExa(linkedinUrl: string): Promise<ProfileResponse> 
         console.log('[Exa] Parsed education:', { school, degree });
         education.push({ school, degree, field: null, start: null, end: null });
       } else {
-        console.log('[Exa] Failed to match education line format');
+        // Try pattern without degree: "### at School"
+        match = line.match(/###\s*at\s+(.+)/);
+        if (match) {
+          let school = match[1].trim();
+          school = school.replace(/\[([^\]]+)\]<web_link>/g, '$1');
+          const degree = "—";  // Use placeholder when degree is missing
+          console.log('[Exa] Parsed education (no degree):', { school, degree });
+          education.push({ school, degree, field: null, start: null, end: null });
+        } else {
+          console.log('[Exa] Failed to match education line format');
+        }
       }
     }
 
@@ -382,6 +393,14 @@ async function getProfileWithExa(linkedinUrl: string): Promise<ProfileResponse> 
       const schoolName = (edu.school || '').toLowerCase();
       const degreeName = (edu.degree || '').toLowerCase();
 
+      // If school name contains "university" or "college", it's NOT high school
+      // (even if degree is missing)
+      if (schoolName.includes('university') ||
+          schoolName.includes('college') && !schoolName.includes('uwc')) {
+        return false;
+      }
+
+      // Check for explicit high school indicators in school name
       if (schoolName.includes('high school') ||
           schoolName.includes('secondary school') ||
           schoolName.includes('preparatory') ||
@@ -395,8 +414,10 @@ async function getProfileWithExa(linkedinUrl: string): Promise<ProfileResponse> 
         return true;
       }
 
+      // Check degree name patterns
       if (degreeName.includes('high school') ||
           degreeName.includes('ib diploma') ||
+          degreeName.includes('ibdp') ||
           degreeName.includes('international baccalaureate') ||
           degreeName.includes('a-level') ||
           degreeName.includes('a level') ||
@@ -407,10 +428,14 @@ async function getProfileWithExa(linkedinUrl: string): Promise<ProfileResponse> 
           degreeName.includes('grade 12') ||
           degreeName.includes('secondary education') ||
           degreeName.includes('noc ') ||  // NUS Overseas Colleges program
-          degreeName.includes('batch ') ||  // Program batches
-          degreeName === '—' ||
-          degreeName === '') {
+          degreeName.includes('batch ')) {  // Program batches
         return true;
+      }
+
+      // If degree is missing (—) but school doesn't indicate university/college,
+      // treat as unknown (not high school, not college)
+      if (degreeName === '—' || degreeName === '') {
+        return false;  // Don't assume it's high school
       }
 
       return false;
@@ -418,12 +443,18 @@ async function getProfileWithExa(linkedinUrl: string): Promise<ProfileResponse> 
 
     const getEducationRank = (edu: Education): number => {
       const degreeName = (edu.degree || '').toLowerCase();
+      const schoolName = (edu.school || '').toLowerCase();
 
       if (degreeName.includes('phd') || degreeName.includes('ph.d') || degreeName.includes('doctorate')) return 5;
       if (degreeName.includes('master') || degreeName.includes('mba') || degreeName.includes('ms') || degreeName.includes('ma')) return 4;
       if (degreeName.includes('bachelor') || degreeName.includes('bs') || degreeName.includes('ba') || degreeName.includes('b.tech') || degreeName.includes('btech')) return 3;
       if (degreeName.includes('associate') || degreeName.includes('diploma')) return 2;
       if (isHighSchool(edu)) return 0;
+
+      // If degree is missing but school is a university, assume bachelor's level
+      if ((degreeName === '—' || degreeName === '') && schoolName.includes('university')) {
+        return 3;  // Same as bachelor's
+      }
 
       return 1;
     };
