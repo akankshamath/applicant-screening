@@ -59,9 +59,13 @@ interface LinkedInEducation {
     schoolName?: string;
   };
   degreeName?: string;
+  degree?: string;
   fieldOfStudy?: string;
+  activities?: string;
+  grade?: string;
   timePeriod?: TimePeriod;
   dateRange?: TimePeriod;
+  [key: string]: unknown; // Allow other fields we might not know about
 }
 
 interface LinkedInProfile {
@@ -145,7 +149,7 @@ async function buildSession(liAt: string): Promise<AxiosInstance> {
 
     // Check if we got redirected (cookie invalid)
     if (resp.status === 302 || resp.status === 301) {
-      throw new Error('LinkedIn cookie expired or invalid. Please update your li_at cookie in the setup panel.');
+      throw new Error('LinkedIn cookie expired or invalid. Please update your li_at cookie.');
     }
 
     const setCookies: string[] = ([] as string[]).concat(resp.headers['set-cookie'] ?? []);
@@ -154,8 +158,20 @@ async function buildSession(liAt: string): Promise<AxiosInstance> {
     if (match) jsession = match[1].replace(/"/g, '');
   } catch (error) {
     if (axios.isAxiosError(error)) {
+      if (error.response?.status === 403) {
+        throw new Error(
+          'LinkedIn cookie rejected (403 Forbidden). Your li_at cookie may be expired, invalid, or LinkedIn detected automated access. ' +
+          'Get a fresh cookie: 1) Go to linkedin.com while logged in, 2) Open DevTools (F12), 3) Application → Cookies → linkedin.com, ' +
+          '4) Copy the "li_at" value, 5) Update your .env file'
+        );
+      }
+      if (error.response?.status === 401) {
+        throw new Error(
+          'LinkedIn cookie unauthorized (401). Your cookie has expired. Get a fresh li_at cookie from linkedin.com.'
+        );
+      }
       if (error.message.includes('redirects')) {
-        throw new Error('LinkedIn cookie expired or invalid. Please get a fresh li_at cookie from linkedin.com (see setup panel).');
+        throw new Error('LinkedIn cookie expired or invalid. Please get a fresh li_at cookie from linkedin.com.');
       }
     }
     throw error;
@@ -236,10 +252,11 @@ async function getProfileWithExa(linkedinUrl: string): Promise<ProfileResponse> 
     });
 
     // Log only essential info, not full API response (may contain sensitive data)
-    console.log('Exa: Retrieved content for URL');
+    console.log('Exa: API call successful');
 
     if (!result.results || result.results.length === 0) {
-      throw new Error('No results from Exa');
+      console.log('Exa: No results returned (profile may be private/restricted or URL invalid)');
+      throw new Error('No results from Exa - profile may be private or unavailable');
     }
 
     const content = result.results[0];
@@ -404,11 +421,22 @@ app.post('/screen', async (req: Request, res: Response) => {
   // Try Exa first if available
   if (EXA_API_KEY && exaClient) {
     try {
-      console.log('Using Exa AI to fetch profile...');
+      console.log(`[Exa] Attempting to fetch: ${linkedinUrl}`);
       const result = await getProfileWithExa(linkedinUrl);
+      console.log(`[Exa] Success: Retrieved profile for ${result.name}`);
       return res.json(result);
     } catch (error) {
-      console.error('Exa failed, falling back to li_at method:', error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.log(`[Exa] Failed: ${errorMsg}`);
+
+      // If we don't have LinkedIn cookie, return error
+      if (!LI_AT_ENV) {
+        return res.status(500).json({
+          error: `Exa AI failed: ${errorMsg}. No LinkedIn cookie configured as fallback.`
+        });
+      }
+
+      console.log('[LinkedIn] Falling back to LinkedIn cookie method...');
       // Fall through to li_at method
     }
   }
@@ -424,22 +452,42 @@ app.post('/screen', async (req: Request, res: Response) => {
 
   let client: AxiosInstance;
   try {
+    console.log('[LinkedIn] Building session...');
     client = await buildSession(liAt);
+    console.log('[LinkedIn] Session initialized successfully');
   } catch (e: unknown) {
-    return res.status(500).json({ error: 'Failed to initialize LinkedIn session: ' + (e instanceof Error ? e.message : String(e)) });
+    const message = e instanceof Error ? e.message : String(e);
+    console.error(`[LinkedIn] Session failed: ${message}`);
+    return res.status(500).json({ error: 'Failed to initialize LinkedIn session: ' + message });
   }
 
   let data: LinkedInProfileData;
   try {
+    console.log(`[LinkedIn] Fetching profile: ${linkedinUrl}`);
     data = await getLinkedInProfile(linkedinUrl, client);
+    console.log('[LinkedIn] Profile data retrieved successfully');
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : String(e);
-    return res.status(500).json({ error: message });
+    console.error(`[LinkedIn] Profile fetch failed: ${message}`);
+    return res.status(500).json({ error: 'Failed to fetch LinkedIn profile: ' + message });
   }
 
   const profile: LinkedInProfile = data.profile ?? {};
   const positions: LinkedInPosition[] = data.positions ?? [];
   const educations: LinkedInEducation[] = data.educations ?? [];
+
+  // Debug: Log raw education data to help diagnose parsing issues
+  if (educations.length > 0) {
+    console.log('[LinkedIn] Raw education data fields:', {
+      schoolName: educations[0].schoolName,
+      degreeName: educations[0].degreeName,
+      degree: educations[0].degree,
+      fieldOfStudy: educations[0].fieldOfStudy,
+      grade: educations[0].grade,
+      activities: educations[0].activities,
+      allKeys: Object.keys(educations[0])
+    });
+  }
 
   // Helper: extract start/end years from timePeriod
   const parseDates = (entry: LinkedInPosition | LinkedInEducation) => {
@@ -453,10 +501,37 @@ app.post('/screen', async (req: Request, res: Response) => {
   // --- Education ---
   const education: Education[] = educations.map((edu) => {
     const { startYear, endYear } = parseDates(edu);
+
+    // Extract degree name - check multiple possible fields
+    let degreeName = edu.degreeName ?? edu.degree ?? null;
+    const fieldOfStudy = edu.fieldOfStudy ?? null;
+
+    // LinkedIn API sometimes puts grade in the degreeName field
+    // Check if degreeName looks like a number (grade/GPA/CGPA)
+    if (degreeName && /^[\d.]+$/.test(degreeName.trim())) {
+      console.log(`[LinkedIn] Detected grade "${degreeName}" in degree field, using fieldOfStudy instead`);
+      // This is a grade, not a degree - discard it
+      degreeName = null;
+    }
+
+    // Try to construct a meaningful degree string from available fields
+    if (!degreeName && fieldOfStudy) {
+      // If we have field of study but no degree, use field of study
+      degreeName = fieldOfStudy;
+    } else if (degreeName && fieldOfStudy && degreeName !== fieldOfStudy) {
+      // If we have both and they're different, combine them
+      degreeName = `${degreeName}, ${fieldOfStudy}`;
+    }
+
+    // Final fallback - if still no degree, return "—"
+    if (!degreeName) {
+      degreeName = "—";
+    }
+
     return {
       school: edu.schoolName ?? edu.school?.schoolName ?? null,
-      degree: edu.degreeName ?? null,
-      field: edu.fieldOfStudy ?? null,
+      degree: degreeName,
+      field: fieldOfStudy,
       start: startYear,
       end: endYear,
     };
