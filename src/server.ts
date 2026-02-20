@@ -680,7 +680,7 @@ app.post('/screen', async (req: Request, res: Response) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n🏠 Hackerhouse Screener`);
+  console.log(`\nHackerhouse Screener`);
   console.log(`Server running on http://localhost:${PORT}\n`);
 
   if (!LI_AT_ENV && !EXA_API_KEY) {
