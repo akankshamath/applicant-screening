@@ -377,11 +377,68 @@ async function getProfileWithExa(linkedinUrl: string): Promise<ProfileResponse> 
       }
     }
 
+    // Filter and prioritize education (same as LinkedIn method)
+    const isHighSchool = (edu: Education): boolean => {
+      const schoolName = (edu.school || '').toLowerCase();
+      const degreeName = (edu.degree || '').toLowerCase();
+
+      if (schoolName.includes('high school') ||
+          schoolName.includes('secondary school') ||
+          schoolName.includes('preparatory') ||
+          schoolName.includes('prep school') ||
+          schoolName.includes('uwc ') ||
+          schoolName.includes('uwc south') ||
+          schoolName.includes('uwc east') ||
+          schoolName.includes('international school') ||
+          schoolName.includes('sixth form') ||
+          schoolName.includes('college preparatory')) {
+        return true;
+      }
+
+      if (degreeName.includes('high school') ||
+          degreeName.includes('ib diploma') ||
+          degreeName.includes('international baccalaureate') ||
+          degreeName.includes('a-level') ||
+          degreeName.includes('a level') ||
+          degreeName.includes('gcse') ||
+          degreeName.includes('o-level') ||
+          degreeName.includes('cbse') ||
+          degreeName.includes('icse') ||
+          degreeName.includes('grade 12') ||
+          degreeName.includes('secondary education') ||
+          degreeName.includes('noc ') ||  // NUS Overseas Colleges program
+          degreeName.includes('batch ') ||  // Program batches
+          degreeName === '—' ||
+          degreeName === '') {
+        return true;
+      }
+
+      return false;
+    };
+
+    const getEducationRank = (edu: Education): number => {
+      const degreeName = (edu.degree || '').toLowerCase();
+
+      if (degreeName.includes('phd') || degreeName.includes('ph.d') || degreeName.includes('doctorate')) return 5;
+      if (degreeName.includes('master') || degreeName.includes('mba') || degreeName.includes('ms') || degreeName.includes('ma')) return 4;
+      if (degreeName.includes('bachelor') || degreeName.includes('bs') || degreeName.includes('ba') || degreeName.includes('b.tech') || degreeName.includes('btech')) return 3;
+      if (degreeName.includes('associate') || degreeName.includes('diploma')) return 2;
+      if (isHighSchool(edu)) return 0;
+
+      return 1;
+    };
+
+    const collegeEducation = education.filter(edu => !isHighSchool(edu));
+    const filteredEducation = collegeEducation.length > 0 ? collegeEducation : education;
+    filteredEducation.sort((a, b) => getEducationRank(b) - getEducationRank(a));
+
+    console.log('[Exa] After filtering: showing', filteredEducation.length, 'education entries');
+
     return {
       name,
       headline: content.title?.split('|')[1]?.trim() || null,
       location,
-      education,
+      education: filteredEducation,
       experiences,
       current_company: {
         name: currentCompany,
