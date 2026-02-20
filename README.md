@@ -1,8 +1,8 @@
-# Hackerhouse Screener
+# Linkedin Screener
 
-**Simple LinkedIn bulk screener for non-technical users.**
+**Simple LinkedIn screener**
 
-You set it up once. They just paste LinkedIn URLs and get results. No API costs. No complicated setup for end users.
+You set it up once. They just paste LinkedIn URLs and get results.
 
 ---
 

@@ -499,7 +499,7 @@ app.post('/screen', async (req: Request, res: Response) => {
   };
 
   // --- Education ---
-  const education: Education[] = educations.map((edu) => {
+  const allEducation: Education[] = educations.map((edu) => {
     const { startYear, endYear } = parseDates(edu);
 
     // Extract degree name - check multiple possible fields
@@ -536,6 +536,52 @@ app.post('/screen', async (req: Request, res: Response) => {
       end: endYear,
     };
   });
+
+  // Helper function to detect if education is high school
+  const isHighSchool = (edu: Education): boolean => {
+    const schoolName = (edu.school || '').toLowerCase();
+    const degreeName = (edu.degree || '').toLowerCase();
+
+    // Check for high school indicators in school name
+    if (schoolName.includes('high school') ||
+        schoolName.includes('secondary school') ||
+        schoolName.includes('preparatory') ||
+        schoolName.includes('prep school')) {
+      return true;
+    }
+
+    // Check for high school indicators in degree name
+    if (degreeName.includes('high school') ||
+        degreeName === '—' ||
+        degreeName === '') {
+      return true;
+    }
+
+    return false;
+  };
+
+  // Helper function to rank education level (higher = more important)
+  const getEducationRank = (edu: Education): number => {
+    const degreeName = (edu.degree || '').toLowerCase();
+
+    if (degreeName.includes('phd') || degreeName.includes('ph.d') || degreeName.includes('doctorate')) return 5;
+    if (degreeName.includes('master') || degreeName.includes('mba') || degreeName.includes('ms') || degreeName.includes('ma')) return 4;
+    if (degreeName.includes('bachelor') || degreeName.includes('bs') || degreeName.includes('ba') || degreeName.includes('b.tech') || degreeName.includes('btech')) return 3;
+    if (degreeName.includes('associate') || degreeName.includes('diploma')) return 2;
+    if (isHighSchool(edu)) return 0;
+
+    // Unknown degree type, but not high school
+    return 1;
+  };
+
+  // Filter and sort education: prioritize college over high school
+  const collegeEducation = allEducation.filter(edu => !isHighSchool(edu));
+
+  // If there's college education, use only that; otherwise include high school
+  const education = collegeEducation.length > 0 ? collegeEducation : allEducation;
+
+  // Sort by education level (highest degree first)
+  education.sort((a, b) => getEducationRank(b) - getEducationRank(a));
 
   // --- Experience ---
   const experiences: Experience[] = [];
